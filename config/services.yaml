@@ -4,6 +4,10 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    twitter.api.key: '%env(string:TWITTER_API_KEY)%'
+    twitter.api.secret.key: '%env(string:TWITTER_API_SECRET_KEY)%'
+    twitter.access.token: '%env(string:TWITTER_ACCESS_TOKEN)%'
+    twitter.access.token.secret: '%env(string:TWITTER_ACCESS_TOKEN_SECRET)%'
 
 services:
     # default configuration for services in *this* file

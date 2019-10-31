@@ -2,16 +2,28 @@
 
 namespace App\Command;
 
-use Curl\Curl;
+use Exception;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Flex\CurlDownloader;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use TwitterAPIExchange;
 
 class ParseHashtagCommand extends Command
 {
+    /**
+     * @var ContainerInterface
+     */
+    private $container;
+
+    public function __construct(ContainerInterface $container)
+    {
+        parent::__construct();
+        $this->container = $container;
+    }
+
     protected static $defaultName = 'app:parse-hashtag';
 
     protected function configure()
@@ -22,6 +34,12 @@ class ParseHashtagCommand extends Command
         ;
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     * @throws Exception
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -31,18 +49,37 @@ class ParseHashtagCommand extends Command
             $io->note(sprintf('You passed an argument: %s', $hashtag));
         }
 
-        $url = "https://twitter.com/search";
-        $filename = "./var/tmp/matches.html";
+        $settings = [
+            'oauth_access_token' => $this->container->getParameter('twitter.access.token'),
+            'oauth_access_token_secret' => $this->container->getParameter('twitter.access.token.secret'),
+            'consumer_key' => $this->container->getParameter('twitter.api.key'),
+            'consumer_secret' => $this->container->getParameter('twitter.api.secret.key')
+        ];
 
-        $curl = new Curl();
-        $curl->get($url, [
-            'q' => "#{$hashtag}",
-            'src' => 'typed_query'
-        ]);
+        $url = 'https://api.twitter.com/1.1/search/tweets.json';
+            $getField = "?q=#{$hashtag}&count=100";
+        $requestMethod = 'GET';
+        $twitter = new TwitterAPIExchange($settings);
+        $json =  $twitter->setGetfield($getField)
+            ->buildOauth($url, $requestMethod)
+            ->performRequest();
 
-        $bytes = file_put_contents($filename, $curl->getResponse());
+        $data = json_decode($json);
 
-        $io->success(sprintf('Wrote %d bytes', $bytes));
+        $users = [];
+
+        foreach ($data->statuses as $tweet){
+            $reTweet = $tweet->retweeted_status ?? null;
+            if (!$reTweet){
+                $user = $tweet->user->screen_name;
+                $users[] = $user;
+                $io->text($user);
+            }
+        }
+
+        $winnerKey = array_rand($users);
+
+        $io->success($users[$winnerKey]);
 
         return 0;
     }
