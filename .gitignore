@@ -9,6 +9,3 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
-###> Docker ###
-/logs/
-###> Docker ###

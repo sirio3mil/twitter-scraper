@@ -5,7 +5,7 @@ services:
     container_name: php
     volumes:
       - .:/usr/share/nginx/html
-      - ./logs/php-fpm:/var/log/php-fpm
+      - ./var/log/php-fpm:/var/log/php-fpm
       - ./config/php-fpm/php.ini:/etc/php.ini
       - ./config/php-fpm/php-fpm.conf:/etc/php-fpm.conf
       - ./config/php-fpm/www.conf:/etc/php-fpm.d/www.conf

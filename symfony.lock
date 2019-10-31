@@ -1,4 +1,7 @@
 {
+    "curl/curl": {
+        "version": "2.2.0"
+    },
     "doctrine/inflector": {
         "version": "v1.3.0"
     },

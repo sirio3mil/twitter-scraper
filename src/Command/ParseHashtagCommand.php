@@ -2,12 +2,13 @@
 
 namespace App\Command;
 
+use Curl\Curl;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Flex\CurlDownloader;
 
 class ParseHashtagCommand extends Command
 {
@@ -30,9 +31,18 @@ class ParseHashtagCommand extends Command
             $io->note(sprintf('You passed an argument: %s', $hashtag));
         }
 
+        $url = "https://twitter.com/search";
+        $filename = "./var/tmp/matches.html";
 
+        $curl = new Curl();
+        $curl->get($url, [
+            'q' => "#{$hashtag}",
+            'src' => 'typed_query'
+        ]);
 
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+        $bytes = file_put_contents($filename, $curl->getResponse());
+
+        $io->success(sprintf('Wrote %d bytes', $bytes));
 
         return 0;
     }
