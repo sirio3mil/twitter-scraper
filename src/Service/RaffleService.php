@@ -2,8 +2,9 @@
 
 namespace App\Service;
 
-use App\Exception\WinnerNotFoundException;
-use stdClass;
+use App\Model\Twitter\Counter;
+use App\ValueObject\Twitter\User;
+use UnexpectedValueException;
 
 class RaffleService
 {
@@ -11,16 +12,6 @@ class RaffleService
      * @var bool
      */
     protected $unique;
-
-    /**
-     * @var array
-     */
-    private $userData;
-
-    /**
-     * @var string
-     */
-    private $winnerId;
 
     /**
      * @param bool $unique
@@ -33,56 +24,17 @@ class RaffleService
     }
 
     /**
-     * @param string $json
-     * @return RaffleService
+     * @param Counter[] $results
+     * @return User
      */
-    public function calculate(string $json): RaffleService
+    public function getWinner(array $results): User
     {
-        $data = json_decode($json);
-        $users = [];
-        $this->userData = [];
-
-        foreach ($data->statuses as $tweet) {
-            $reTweet = $tweet->retweeted_status ?? null;
-            if (!$reTweet) {
-                $user = $tweet->user;
-                $users[] = $user->id;
-                $this->userData[$user->id] = $user;
-            }
+        if (!$this->unique) {
+            throw new UnexpectedValueException();
         }
 
-        $targetUsers = ($this->unique) ? array_unique($users) : $users;
-        $winnerKey = array_rand($targetUsers);
-        $this->winnerId = $targetUsers[$winnerKey];
+        $key = array_rand($results);
 
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getUserData(): array
-    {
-        return $this->userData;
-    }
-
-    /**
-     * @return string
-     */
-    public function getWinnerId(): string
-    {
-        return $this->winnerId;
-    }
-
-    /**
-     * @return stdClass
-     * @throws WinnerNotFoundException
-     */
-    public function getWinner(): stdClass
-    {
-        if (!array_key_exists($this->winnerId, $this->userData)) {
-            throw new WinnerNotFoundException();
-        }
-        return $this->userData[$this->winnerId];
+        return $results[$key]->getUser();
     }
 }

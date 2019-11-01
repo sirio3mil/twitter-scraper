@@ -2,8 +2,10 @@
 
 namespace App\Command;
 
+use App\Model\Twitter\Counter;
 use App\Service\RaffleService;
 use App\Service\TwitterService;
+use App\ValueObject\Twitter\User;
 use Exception;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -78,24 +80,16 @@ class ParseHashtagCommand extends Command
             $pattern = "#$pattern";
         }
 
-        $json = $this->twitterService->search($pattern);
-        $this->save($json);
-        $this->raffleService->setUnique($unique)->calculate($json);
-        foreach ($this->raffleService->getUserData() as $user) {
-            $io->text($user->name);
+        /** @var Counter[] $results */
+        $results = $this->twitterService->search($pattern)->getResults();
+        /** @var User $winner */
+        $winner = $this->raffleService->setUnique($unique)->getWinner($results);
+        /** @var Counter $counter */
+        foreach ($results as $counter) {
+            $io->text($counter->getUser()->getName());
         }
-        $io->success($this->raffleService->getWinner()->name);
+        $io->success($winner->getName());
 
         return 0;
-    }
-
-    /**
-     * @param string $json
-     */
-    protected function save(string $json): void
-    {
-        $hash = sha1($json);
-        $filename = "./var/tmp/{$hash}.json";
-        file_put_contents($filename, $json);
     }
 }
