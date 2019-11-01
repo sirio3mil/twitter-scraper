@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use App\Kernel;
 use App\Model\Twitter\Counter;
 use App\ValueObject\Twitter\Credentials;
 use App\ValueObject\Twitter\User;
