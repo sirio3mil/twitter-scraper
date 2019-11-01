@@ -2,6 +2,8 @@
 
 namespace App\Command;
 
+use App\Service\RaffleService;
+use App\Service\TwitterService;
 use Exception;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,14 +17,24 @@ use TwitterAPIExchange;
 class ParseHashtagCommand extends Command
 {
     /**
-     * @var ContainerInterface
+     * @var TwitterService
      */
-    private $container;
+    private $twitterService;
+    /**
+     * @var RaffleService
+     */
+    private $raffleService;
 
-    public function __construct(ContainerInterface $container)
+    /**
+     * ParseHashtagCommand constructor.
+     * @param TwitterService $twitterService
+     * @param RaffleService $raffleService
+     */
+    public function __construct(TwitterService $twitterService, RaffleService $raffleService)
     {
         parent::__construct();
-        $this->container = $container;
+        $this->twitterService = $twitterService;
+        $this->raffleService = $raffleService;
     }
 
     protected static $defaultName = 'app:parse-hashtag';
@@ -59,7 +71,7 @@ class ParseHashtagCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $pattern = $input->getArgument('pattern');
         $hashtag = $input->getOption('hashtag');
-        $unique = $input->getOption('unique');
+        $unique = boolval($input->getOption('unique'));
 
         if ($pattern) {
             $io->note(sprintf('You passed an argument: %s', $pattern));
@@ -68,44 +80,24 @@ class ParseHashtagCommand extends Command
             $pattern = "#$pattern";
         }
 
-        $settings = [
-            'oauth_access_token' => $this->container->getParameter('twitter.access.token'),
-            'oauth_access_token_secret' => $this->container->getParameter('twitter.access.token.secret'),
-            'consumer_key' => $this->container->getParameter('twitter.api.key'),
-            'consumer_secret' => $this->container->getParameter('twitter.api.secret.key')
-        ];
+        $json = $this->twitterService->search($pattern);
+        $this->save($json);
+        $this->raffleService->setUnique($unique)->calculate($json);
+        foreach ($this->raffleService->getUserData() as $user) {
+            $io->text($user->name);
+        }
+        $io->success($this->raffleService->getWinner()->name);
 
-        $url = 'https://api.twitter.com/1.1/search/tweets.json';
-        $getField = "?q={$pattern}&count=100";
-        $requestMethod = 'GET';
-        $twitter = new TwitterAPIExchange($settings);
-        $json = $twitter->setGetfield($getField)
-            ->buildOauth($url, $requestMethod)
-            ->performRequest();
+        return 0;
+    }
 
+    /**
+     * @param string $json
+     */
+    protected function save(string $json): void
+    {
         $hash = sha1($json);
         $filename = "./var/tmp/{$hash}.json";
         file_put_contents($filename, $json);
-
-        $data = json_decode($json);
-        $users = [];
-        $userData = [];
-
-        foreach ($data->statuses as $tweet) {
-            $reTweet = $tweet->retweeted_status ?? null;
-            if (!$reTweet) {
-                $user = $tweet->user;
-                $users[] = $user->id;
-                $userData[$user->id] = $user;
-                $io->text($user->name);
-            }
-        }
-
-        $targetUsers = ($unique) ? array_unique($users) : $users;
-        $winnerKey = array_rand($targetUsers);
-        $userId = $targetUsers[$winnerKey];
-        $io->success($userData[$userId]->name);
-
-        return 0;
     }
 }
