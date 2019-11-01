@@ -21,7 +21,7 @@ services:
         resource: '../src/*'
         exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
 
-    App\Service\TwitterService:
+    App\ValueObject\Twitter\Credentials:
         arguments:
             - '%twitter.api.key%'
             - '%twitter.api.secret.key%'
