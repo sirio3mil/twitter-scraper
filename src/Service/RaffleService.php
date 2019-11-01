@@ -4,7 +4,6 @@ namespace App\Service;
 
 use App\Exception\WinnerNotFoundException;
 use stdClass;
-use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 
 class RaffleService
 {
