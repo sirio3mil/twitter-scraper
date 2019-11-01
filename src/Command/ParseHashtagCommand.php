@@ -43,8 +43,8 @@ class ParseHashtagCommand extends Command
                 'unique',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Can tweet more than once?',
-                0
+                'Can tweet only once?',
+                1
             );
     }
 
