@@ -27,3 +27,8 @@ services:
             - '%twitter.api.secret.key%'
             - '%twitter.access.token%'
             - '%twitter.access.token.secret%'
+
+    App\Service\TwitterService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $env: '%kernel.environment%'

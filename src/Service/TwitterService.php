@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Kernel;
 use App\Model\Twitter\Counter;
 use App\ValueObject\Twitter\Credentials;
 use App\ValueObject\Twitter\User;
@@ -20,10 +21,27 @@ class TwitterService
      */
     private $results;
 
-    public function __construct(Credentials $credentials)
+    /**
+     * @var string
+     */
+    private $projectDir;
+    /**
+     * @var string
+     */
+    private $env;
+
+    /**
+     * TwitterService constructor.
+     * @param Credentials $credentials
+     * @param string $projectDir
+     * @param string $env
+     */
+    public function __construct(Credentials $credentials, string $projectDir, string $env)
     {
         $this->credentials = $credentials;
         $this->resetResults();
+        $this->projectDir = $projectDir;
+        $this->env = $env;
     }
 
     /**
@@ -50,8 +68,7 @@ class TwitterService
                     $user = $tweet->user;
                     if (!array_key_exists($user->id, $this->results)) {
                         $this->results[$user->id] = new Counter(User::fromSearchResults($user));
-                    }
-                    else{
+                    } else {
                         $this->results[$user->id]->increase();
                     }
                 }
@@ -77,9 +94,11 @@ class TwitterService
      */
     protected function save(string $json): TwitterService
     {
-        $hash = sha1($json);
-        $filename = dirname(__DIR__, 2) . "/var/tmp/{$hash}.json";
-        file_put_contents($filename, $json);
+        if ($this->env === "dev") {
+            $hash = sha1($json);
+            $filename = "{$this->projectDir}/var/tmp/{$hash}.json";
+            file_put_contents($filename, $json);
+        }
         return $this;
     }
 
