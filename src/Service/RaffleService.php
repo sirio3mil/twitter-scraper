@@ -4,7 +4,6 @@ namespace App\Service;
 
 use App\Model\Twitter\Counter;
 use App\ValueObject\Twitter\User;
-use UnexpectedValueException;
 
 class RaffleService
 {
@@ -30,11 +29,19 @@ class RaffleService
     public function getWinner(array $results): User
     {
         if (!$this->unique) {
-            throw new UnexpectedValueException();
+            $keys = [];
+            foreach ($results as $counter) {
+                $id = $counter->getUser()->getId();
+                $total = $counter->getTotal();
+                for ($i = 0; $i < $total; ++$i) {
+                    $keys[] = $id;
+                }
+            }
+            $index = array_rand($keys);
+            $key = $keys[$index];
+        } else {
+            $key = array_rand($results);
         }
-
-        $key = array_rand($results);
-
         return $results[$key]->getUser();
     }
 }
